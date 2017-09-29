@@ -12,19 +12,19 @@ struct bgr_color {
     int g_high;
     int r_low;
     int r_high;
-} green, red;
+};
 
-Mat img, start_img, end_img;
-vector<vector<Point> > start_points, end_points;
-vector<Vec4i> start_hierarchy, end_hierarchy;
-int visited[1000][1000];
-
-void init_bgrcolor() {
+void init_bgrcolor(struct bgr_color &green, struct bgr_color &red) {
     green = {0, 10, 200, 255, 0, 10};
     red = {0, 10, 0, 10, 100, 255};
 }
 
-void extract_color() {
+void extract_color(Mat &img, Mat &start_img, Mat &end_img,
+                   vector<vector<Point> > &start_points,
+                   vector<vector<Point> > &end_points,
+                   struct bgr_color &green, struct bgr_color &red) {
+
+    vector<Vec4i> start_hierarchy, end_hierarchy;
     inRange(img, Scalar(green.b_low, green.g_low, green.r_low),
             Scalar(green.b_high, green.g_high, green.r_high), start_img);
 
@@ -38,7 +38,7 @@ void extract_color() {
                  CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 }
 
-void display_images() {
+void display_images(Mat &img, Mat &start_img, Mat &end_img) {
     imshow("Area", img);
     imshow("Start", start_img);
     imshow("End", end_img);
@@ -54,7 +54,7 @@ Point get_centre(vector<Point> v) {
     return Point((int) x/100, (int) y/100);
 }
 
-bool is_obstacle(int x, int y) {
+bool is_obstacle(Mat &img, int x, int y) {
     if (!(img.at<Vec3b>(x, y)[0] >= 0 && img.at<Vec3b>(x, y)[0] <= 10))
         return false;
 
@@ -78,7 +78,8 @@ bool is_end(Point pt, Point end) {
         return true;
 }
 
-void dfs(Point s, Point e, stack<Point> &st) {
+void dfs(Mat &img, Point s, Point e, stack<Point> &st) {
+    int visited[1000][1000];
     st.push(s);
     visited[s.y][s.x] = 1;
     while(!st.empty()) {
@@ -95,7 +96,8 @@ void dfs(Point s, Point e, stack<Point> &st) {
                     continue;
                 if (temp.y + j < 0 || temp.y + j >= img.rows)
                     continue;
-                if (!is_obstacle(temp.y + j, temp.x + i) && !visited[temp.y + j][temp.x + i]) {
+                if (!is_obstacle(img, temp.y + j, temp.x + i) &&
+                    !visited[temp.y + j][temp.x + i]) {
                     st.push(Point(temp.x + i, temp.y + j));
                     cout << temp.x + i << ", " << temp.y + j << endl;
                     visited[temp.y + j][temp.x + i] = 1;
@@ -105,7 +107,7 @@ void dfs(Point s, Point e, stack<Point> &st) {
     }
 }
 
-void paint_path(stack<Point> &st) {
+void paint_path(Mat &img, stack<Point> &st) {
     while(!st.empty()) {
         Point temp = st.top();
         st.pop();
@@ -116,20 +118,25 @@ void paint_path(stack<Point> &st) {
 }
 
 int main() {
+    Mat img, start_img, end_img;
+    vector<vector<Point> > start_points, end_points;
     Point start, end;
     stack<Point> path;
+    struct bgr_color green, red;
+
     img = imread("a-star-image.jpg", CV_LOAD_IMAGE_COLOR);
 
-    init_bgrcolor();
-    extract_color();
+    init_bgrcolor(green, red);
+    extract_color(img, start_img, end_img, start_points, end_points,
+                  green, red);
 
     start = get_centre(start_points[0]);
     end = get_centre(end_points[0]);
 
-    dfs(start, end, path);
-    paint_path(path);
+    dfs(img, start, end, path);
+    paint_path(img, path);
 
-    display_images();
+    display_images(img, start_img, end_img);
     waitKey(0);
 
     return 0;
