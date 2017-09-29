@@ -14,8 +14,6 @@ struct bgr_color {
     int r_high;
 } green, red;
 
-int visited[1000][1000];
-
 void init_bgrcolor() {
     green = {0, 10, 200, 255, 0, 10};
     red = {0, 10, 0, 10, 100, 255};
@@ -80,6 +78,7 @@ bool is_end(Point pt, Point end) {
 }
 
 void dfs(Mat &img, Point s, Point e, stack<Point> &st) {
+    int visited[1000][1000];
     st.push(s);
     visited[s.y][s.x] = 1;
     while(!st.empty()) {
