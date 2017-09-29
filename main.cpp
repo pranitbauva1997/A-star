@@ -14,8 +14,6 @@ struct bgr_color {
     int r_high;
 } green, red;
 
-vector<vector<Point> > start_points, end_points;
-vector<Vec4i> start_hierarchy, end_hierarchy;
 int visited[1000][1000];
 
 void init_bgrcolor() {
@@ -23,7 +21,11 @@ void init_bgrcolor() {
     red = {0, 10, 0, 10, 100, 255};
 }
 
-void extract_color(Mat &img, Mat &start_img, Mat &end_img) {
+void extract_color(Mat &img, Mat &start_img, Mat &end_img,
+                   vector<vector<Point> > &start_points,
+                   vector<vector<Point> > &end_points) {
+
+    vector<Vec4i> start_hierarchy, end_hierarchy;
     inRange(img, Scalar(green.b_low, green.g_low, green.r_low),
             Scalar(green.b_high, green.g_high, green.r_high), start_img);
 
@@ -117,12 +119,13 @@ void paint_path(Mat &img, stack<Point> &st) {
 
 int main() {
     Mat img, start_img, end_img;
+    vector<vector<Point> > start_points, end_points;
     Point start, end;
     stack<Point> path;
     img = imread("a-star-image.jpg", CV_LOAD_IMAGE_COLOR);
 
     init_bgrcolor();
-    extract_color(img, start_img, end_img);
+    extract_color(img, start_img, end_img, start_points, end_points);
 
     start = get_centre(start_points[0]);
     end = get_centre(end_points[0]);
