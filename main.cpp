@@ -1,4 +1,6 @@
 #include <opencv2/opencv.hpp>
+#include <stack>
+#include <math.h>
 
 using namespace std;
 using namespace cv;
@@ -15,6 +17,7 @@ struct bgr_color {
 Mat img, start_img, end_img;
 vector<vector<Point> > start_points, end_points;
 vector<Vec4i> start_hierarchy, end_hierarchy;
+int visited[1000][1000];
 
 void init_bgrcolor() {
     green = {0, 10, 200, 255, 0, 10};
@@ -45,15 +48,76 @@ Point get_centre(vector<Point> v) {
     double x = 0, y = 0;
     int s = v.size();
     for (int i = 0; i < v.size(); i++) {
-        cout << v[i].x << ", " << v[i].y << endl;
         x += v[i].x * 100/s;
         y += v[i].y * 100/s;
     }
     return Point((int) x/100, (int) y/100);
 }
 
+bool is_obstacle(int x, int y) {
+    if (!(img.at<Vec3b>(x, y)[0] >= 0 && img.at<Vec3b>(x, y)[0] <= 10))
+        return false;
+
+    if (!(img.at<Vec3b>(x, y)[1] >= 0 && img.at<Vec3b>(x, y)[1] <= 0))
+        return false;
+
+    if (!(img.at<Vec3b>(x, y)[2] >= 0 && img.at<Vec3b>(x, y)[2] <= 10))
+        return false;
+
+    return true;
+}
+
+double dist(Point p1, Point p2) {
+    return sqrt(pow((p1.x - p2.x), 2) + pow((p1.y - p2.y), 2));
+}
+
+bool is_end(Point pt, Point end) {
+    if (dist(pt, end) > 10)
+        return false;
+    else
+        return true;
+}
+
+void dfs(Point s, Point e, stack<Point> &st) {
+    st.push(s);
+    visited[s.y][s.x] = 1;
+    while(!st.empty()) {
+        Point temp = st.top();
+        st.pop();
+
+        if (is_end(temp, e)) {
+            return;
+        }
+
+        for (int i = -1; i < 2; i++) {
+            for (int j = -1; j < 2; j++) {
+                if (temp.x + i < 0 || temp.x + i >= img.cols)
+                    continue;
+                if (temp.y + j < 0 || temp.y + j >= img.rows)
+                    continue;
+                if (!is_obstacle(temp.y + j, temp.x + i) && !visited[temp.y + j][temp.x + i]) {
+                    st.push(Point(temp.x + i, temp.y + j));
+                    cout << temp.x + i << ", " << temp.y + j << endl;
+                    visited[temp.y + j][temp.x + i] = 1;
+                }
+            }
+        }
+    }
+}
+
+void paint_path(stack<Point> &st) {
+    while(!st.empty()) {
+        Point temp = st.top();
+        st.pop();
+        img.at<Vec3b>(temp.y, temp.x)[0] = 255;
+        img.at<Vec3b>(temp.y, temp.x)[2] = 255;
+        img.at<Vec3b>(temp.y, temp.x)[1] = 0;
+    }
+}
+
 int main() {
     Point start, end;
+    stack<Point> path;
     img = imread("a-star-image.jpg", CV_LOAD_IMAGE_COLOR);
 
     init_bgrcolor();
@@ -61,6 +125,9 @@ int main() {
 
     start = get_centre(start_points[0]);
     end = get_centre(end_points[0]);
+
+    dfs(start, end, path);
+    paint_path(path);
 
     display_images();
     waitKey(0);
