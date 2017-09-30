@@ -78,8 +78,28 @@ bool is_end(Point pt, Point end) {
         return true;
 }
 
+void init_visited(int **visited, int rows, int cols) {
+    visited = new int*[rows];
+    for (int i = 0; i < rows; i++) {
+        visited[i] = new int[cols];
+        for (int j = 0;  j < cols; j++) {
+            visited[i][j] = 0;
+        }
+    }
+}
+
+void free_visited(int **visited, int rows, int cols) {
+    for (int i = 0; i < rows; i++)
+        delete [] visited[i];
+
+    delete [] visited;
+}
+
 void dfs(Mat &img, Point s, Point e, stack<Point> &st) {
-    int visited[1000][1000];
+    int **visited;
+
+    init_visited(visited, img.rows, img.cols);
+    cout << visited[61][38] << endl;
     st.push(s);
     visited[s.y][s.x] = 1;
     while(!st.empty()) {
@@ -105,6 +125,7 @@ void dfs(Mat &img, Point s, Point e, stack<Point> &st) {
             }
         }
     }
+    free_visited(visited, img.rows, img.cols);
 }
 
 void paint_path(Mat &img, stack<Point> &st) {
